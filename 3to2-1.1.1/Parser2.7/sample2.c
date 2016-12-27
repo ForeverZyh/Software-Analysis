@@ -11,7 +11,6 @@ int main()
 {
 	int i;
 	n=100;
-#pragma acc parallel loop
 	for (i=0; i<n; i++) {
 		int if_test;
 		y[i] = 0.0f;
@@ -21,7 +20,6 @@ int main()
 			if_test=1;
 		}
 	}
-#pragma acc parallel loop
 	for (i=0; i<n; i++) {
           y[i] = 2.0f * x[i] + y[i];
     }

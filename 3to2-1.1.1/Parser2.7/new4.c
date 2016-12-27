@@ -11,7 +11,6 @@ int main()
 {
 	int i;
 	n=100;
-#pragma acc parallel loop
 	for (i=0; i<n; i++) {
 		int if_test;
 		y[i] = 0.0f;
@@ -19,6 +18,7 @@ int main()
 		if (i>n/2)
 		{
 			if_test=1;
+			continue;
 		}
 	}
 #pragma acc parallel loop

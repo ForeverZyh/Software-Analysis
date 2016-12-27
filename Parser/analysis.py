@@ -39,7 +39,7 @@ short = "#pragma acc loop"
 countfor = 0
 
 
-def parse_block(begin, end, outer_new=None, for_father=None):
+def parse_block(begin, end, outer_new, for_father, outer_end):
     global countfor
     whole = Expr("")
     (values, arrays) = car(begin.env)
@@ -63,7 +63,8 @@ def parse_block(begin, end, outer_new=None, for_father=None):
             if len(new.pred_inst) > 1:
                 tmp.interrupt = True
             for i in range(len(new.pred_inst)):
-                tmp.merge(parse_block(exp.succ_inst[t], new.pred_inst[i], new, begin))
+                if len(new.pred_inst[i].succ_inst)==1:
+                    tmp.merge(parse_block(exp.succ_inst[t], new.pred_inst[i], new, begin, begin.jump))
             begin.isLikely = isLikely(begin.expression.s, exp.expression.s, new.expression.s)
             itr = None
             if begin.isLikely:
@@ -94,8 +95,8 @@ def parse_block(begin, end, outer_new=None, for_father=None):
             whole.merge(begin.expression)
             begin = begin.jump
         elif begin.category == "if":
-            whole.merge(parse_block(begin.succ_inst[0], begin.jump))
-            whole.merge(parse_block(begin.succ_inst[1], begin.jump))
+            whole.merge(parse_block(begin.succ_inst[0], begin.jump, outer_new, for_father, outer_end))
+            whole.merge(parse_block(begin.succ_inst[1], begin.jump, outer_new, for_father, outer_end))
             begin = begin.jump
         elif begin.category == "while":
             if begin == end:
@@ -103,7 +104,7 @@ def parse_block(begin, end, outer_new=None, for_father=None):
             t = 0
             if begin.succ_inst[0] == begin.jump:
                 t = 1
-            whole.merge(parse_block(begin.succ_inst[t], begin))
+            whole.merge(parse_block(begin.succ_inst[t], begin, begin, for_father, begin.jump))
             begin = begin.jump
         if begin == end:
             break
@@ -119,7 +120,7 @@ def parse_block(begin, end, outer_new=None, for_father=None):
                 t = 0
                 if begin.succ_inst[0].expression.s == "":
                     t = 1
-                if begin.succ_inst[t].expression.s == "":
+                if begin.succ_inst[t].expression.s != "":
                     print("continue")
                     if begin.succ_inst[t] == outer_new:
                         t = 1 - t
@@ -312,13 +313,18 @@ def write(now):
             fout.write(alter[i][1])
 
 
-if len(sys.argv) == 3:
-    filein = sys.argv[1]
-    fileout = sys.argv[2]
+Test = False
+if len(sys.argv) == 3 or Test:
+    if Test:
+        filein = "sample2.c"
+        fileout = "new2.c"
+    else:
+        filein = sys.argv[1]
+        fileout = sys.argv[2]
     with open(filein, 'r') as fin:
         graph = cparser(fin.read())
     Downwards_Analysis(graph.begin, graph.end)
-    parse_block(graph.begin, graph.end)
+    parse_block(graph.begin, graph.end, None, None, None)
     graph.begin.line = 0
     dfs(graph.begin, False)
     now = 0
